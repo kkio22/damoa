@@ -32,8 +32,8 @@ COPY --from=builder /app/package*.json ./
 # scripts 폴더 복사 (마이그레이션용)
 COPY --from=builder /app/scripts ./scripts
 
-# 포트 노출
-EXPOSE 3000
+# 포트 노출 (GCP Cloud Run용 8080)
+EXPOSE 8080
 
 # 서버 시작
 CMD ["node", "dist/server.js"]
