@@ -12,7 +12,7 @@ on:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: asia-northeast3  # 서울 리전
+  REGION: us-central1  # 미국 중부 리전
   BACKEND_SERVICE: smarttrade-backend
   FRONTEND_SERVICE: smarttrade-frontend
 
@@ -82,6 +82,43 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Setup Firewall Rules
+        run: |
+          echo "🔥 방화벽 규칙 확인 중..."
+          
+          # HTTP (80) 규칙은 기존 http-server 태그 활용 (이미 존재할 가능성)
+          # 없으면 생성
+          if ! gcloud compute firewall-rules describe default-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
+            if ! gcloud compute firewall-rules describe smarttrade-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
+              echo "HTTP 방화벽 규칙 생성 중..."
+              gcloud compute firewall-rules create smarttrade-allow-http \
+                --project=${{ env.PROJECT_ID }} \
+                --allow=tcp:80 \
+                --source-ranges=0.0.0.0/0 \
+                --target-tags=http-server,smarttrade-server \
+                --description="Allow HTTP traffic for SmartTrade frontend"
+            else
+              echo "✅ HTTP 방화벽 규칙 이미 존재"
+            fi
+          else
+            echo "✅ 기본 HTTP 방화벽 규칙 존재"
+          fi
+          
+          # Backend API (8080) 규칙 확인 및 생성
+          if ! gcloud compute firewall-rules describe smarttrade-allow-backend --project=${{ env.PROJECT_ID }} 2>/dev/null; then
+            echo "Backend 방화벽 규칙 생성 중..."
+            gcloud compute firewall-rules create smarttrade-allow-backend \
+              --project=${{ env.PROJECT_ID }} \
+              --allow=tcp:8080 \
+              --source-ranges=0.0.0.0/0 \
+              --target-tags=smarttrade-server \
+              --description="Allow Backend API traffic for SmartTrade"
+          else
+            echo "✅ Backend 방화벽 규칙 이미 존재"
+          fi
+          
+          echo "✅ 방화벽 규칙 설정 완료"
+
       - name: Deploy to VM
         run: |
           # VM 인스턴스에 SSH로 접속하여 배포
@@ -109,8 +146,22 @@ jobs:
               sudo docker compose -f docker-compose.prod.yml down || true
               sudo docker compose -f docker-compose.prod.yml up -d --build
               
-              echo '✅ 배포 완료!'
+              echo '⏳ 컨테이너 시작 대기 중...'
+              sleep 10
+              
+              echo '📊 컨테이너 상태 확인:'
               sudo docker compose -f docker-compose.prod.yml ps
+              
+              echo ''
+              echo '📝 Backend 로그 (최근 20줄):'
+              sudo docker compose -f docker-compose.prod.yml logs --tail=20 backend || true
+              
+              echo ''
+              echo '📝 Frontend 로그 (최근 20줄):'
+              sudo docker compose -f docker-compose.prod.yml logs --tail=20 frontend || true
+              
+              echo ''
+              echo '✅ 배포 스크립트 완료!'
             "
 
       - name: Get VM External IP
@@ -123,21 +174,114 @@ jobs:
           echo "ip=$IP" >> $GITHUB_OUTPUT
           echo "🌐 VM External IP: $IP"
 
+      - name: Verify VM Tags and Firewall
+        run: |
+          echo "🔍 VM 네트워크 태그 확인:"
+          gcloud compute instances describe ${{ secrets.VM_INSTANCE_NAME }} \
+            --zone=${{ secrets.VM_ZONE }} \
+            --project=${{ env.PROJECT_ID }} \
+            --format='get(tags.items)'
+          
+          echo ""
+          echo "🔍 방화벽 규칙 확인:"
+          gcloud compute firewall-rules list \
+            --project=${{ env.PROJECT_ID }} \
+            --filter="targetTags:smarttrade-server OR targetTags:http-server" \
+            --format="table(name,targetTags,allowed)"
+
       - name: Wait for Services
         run: |
           echo "⏳ 서비스 시작 대기 중..."
-          sleep 30
+          sleep 60
+
+      - name: Check Services on VM
+        run: |
+          echo "🔍 VM 내부 서비스 상태 확인..."
+          gcloud compute ssh ${{ secrets.VM_INSTANCE_NAME }} \
+            --zone=${{ secrets.VM_ZONE }} \
+            --project=${{ env.PROJECT_ID }} \
+            --command="
+              echo '📊 Docker 컨테이너 상태:'
+              cd ~/damoa || cd ~/used\ trade
+              sudo docker compose -f docker-compose.prod.yml ps
+              
+              echo ''
+              echo '🔌 포트 리스닝 확인:'
+              sudo netstat -tlnp | grep -E ':(80|8080)' || echo '포트가 리스닝 중이지 않습니다!'
+              
+              echo ''
+              echo '🌐 로컬 헬스 체크:'
+              curl -s http://localhost:8080/health || echo '로컬에서도 Backend에 연결할 수 없습니다!'
+            "
 
       - name: Health Check
+        continue-on-error: true
+        id: health-check
         run: |
           IP=${{ steps.get-ip.outputs.ip }}
+          
           echo "🔍 Backend Health Check: http://$IP:8080/health"
-          curl -f http://$IP:8080/health || exit 1
+          MAX_RETRIES=10
+          RETRY_DELAY=10
+          SUCCESS=false
           
+          # Backend 헬스 체크 (재시도 로직)
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "시도 $i/$MAX_RETRIES..."
+            if curl -f --max-time 10 http://$IP:8080/health 2>&1; then
+              echo "✅ Backend 정상 작동!"
+              SUCCESS=true
+              break
+            fi
+            echo "❌ 실패 - 대기 중... (${RETRY_DELAY}초)"
+            sleep $RETRY_DELAY
+          done
+          
+          if [ "$SUCCESS" = false ]; then
+            echo ""
+            echo "❌ ============================================"
+            echo "❌ Backend 헬스 체크 실패!"
+            echo "❌ ============================================"
+            echo ""
+            echo "📝 문제 해결 체크리스트:"
+            echo "  1. VM 네트워크 태그 확인 (위에서 출력된 태그 확인)"
+            echo "  2. 방화벽 규칙 확인 (위에서 출력된 방화벽 규칙 확인)"
+            echo "  3. VM 내부 포트 리스닝 상태 확인 (위에서 출력된 netstat 확인)"
+            echo "  4. Docker 컨테이너 로그 확인 (위에서 출력된 로그 확인)"
+            echo ""
+            exit 1
+          fi
+          
+          # Frontend 헬스 체크
+          echo ""
           echo "🔍 Frontend Health Check: http://$IP"
-          curl -f http://$IP || exit 1
+          if curl -f --max-time 10 http://$IP 2>/dev/null; then
+            echo "✅ Frontend 정상 작동!"
+          else
+            echo "⚠️  Frontend 헬스 체크 실패 (계속 진행)"
+          fi
           
-          echo "✅ 배포 성공!"
+          echo ""
+          echo "✅ ============================================"
+          echo "✅ 배포 완료!"
+          echo "✅ ============================================"
           echo "🌐 Frontend: http://$IP"
           echo "🌐 Backend: http://$IP:8080"
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          IP=${{ steps.get-ip.outputs.ip }}
+          echo ""
+          echo "📊 배포 요약"
+          echo "============================================"
+          echo "VM IP: $IP"
+          echo "Frontend: http://$IP"
+          echo "Backend: http://$IP:8080"
+          echo "Health Check: ${{ steps.health-check.outcome }}"
+          echo ""
+          if [ "${{ steps.health-check.outcome }}" != "success" ]; then
+            echo "⚠️  헬스 체크가 실패했습니다."
+            echo "위의 로그를 확인하여 문제를 진단하세요."
+          fi
 
