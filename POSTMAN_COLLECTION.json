@@ -1,0 +1,164 @@
+{
+  "info": {
+    "name": "SmartTrade API",
+    "description": "SmartTrade 크롤링 및 상품 검색 API 모음",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "지역 통계 조회",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/regions/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "regions", "stats"]
+        }
+      }
+    },
+    {
+      "name": "전체 지역 목록",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/regions/towns",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "regions", "towns"]
+        }
+      }
+    },
+    {
+      "name": "크롤링 트리거 (특정 지역)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"locations\": [\"역삼동\", \"논현동\"]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/crawling/trigger",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "crawling", "trigger"]
+        }
+      }
+    },
+    {
+      "name": "크롤링 트리거 (전체 지역 - 주의!)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/crawling/trigger",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "crawling", "trigger"]
+        }
+      }
+    },
+    {
+      "name": "크롤링 상태 조회",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/crawling/status",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "crawling", "status"]
+        }
+      }
+    },
+    {
+      "name": "상품 검색",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/products/search?query=아이폰&location=역삼동",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "products", "search"],
+          "query": [
+            {
+              "key": "query",
+              "value": "아이폰"
+            },
+            {
+              "key": "location",
+              "value": "역삼동"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "지역별 상품 조회",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/products/location/역삼동",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "products", "location", "역삼동"]
+        }
+      }
+    },
+    {
+      "name": "상품 통계",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/products/stats",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "products", "stats"]
+        }
+      }
+    }
+  ]
+}
+

@@ -1,0 +1,32 @@
+{
+  "name": "used-trade",
+  "version": "1.0.0",
+  "description": "당근마켓에서 지역(동)별 중고 상품을 수집해서 Redis에 저장하는 Node.js 기반 크롤러입니다.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "clean": "rm -rf logs/ temp/ output/ cache/ *.log",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kkio22/usedTrade.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kkio22/usedTrade/issues"
+  },
+  "homepage": "https://github.com/kkio22/usedTrade#readme",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/node-cron": "^3.0.11"
+  }
+}

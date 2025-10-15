@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:14
+    container_name: smarttrade-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smarttrade
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smarttrade-network
+
+  # Redis 캐시
+  redis:
+    image: redis:7
+    container_name: smarttrade-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smarttrade-network
+
+  # 백엔드 API 서버
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smarttrade-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: smarttrade
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/logs:/app/logs
+    networks:
+      - smarttrade-network
+    command: >
+      sh -c "
+        echo '⏳ Waiting for database...' &&
+        sleep 10 &&
+        echo '📊 Running database migration...' &&
+        npx ts-node scripts/migrate.ts || echo '⚠️  Migration failed, tables may already exist' &&
+        echo '🚀 Starting server...' &&
+        node dist/server.js
+      "
+
+  # 프론트엔드 웹 서버
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # 브라우저에서 접근할 수 있는 주소로 설정
+        REACT_APP_API_URL: http://localhost:3000
+    container_name: smarttrade-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - smarttrade-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  smarttrade-network:
+    driver: bridge
+

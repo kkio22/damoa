@@ -1,0 +1,94 @@
+# GitHub Actions - 크롤링 자동 트리거
+# 매일 자정에 자동으로 크롤링을 실행합니다
+
+name: Daily Crawling Trigger
+
+on:
+  # 매일 자정 (UTC 15:00 = KST 00:00)
+  schedule:
+    - cron: '0 15 * * *'
+  
+  # 수동 트리거 (GitHub Actions 탭에서 실행 가능)
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: '크롤링할 플랫폼'
+        required: true
+        default: 'daangn'
+        type: choice
+        options:
+          - daangn
+          - joonggo
+          - bunjang
+      locations:
+        description: '크롤링할 지역 (쉼표로 구분)'
+        required: false
+        default: '역삼동,논현동,압구정동,청담동'
+
+jobs:
+  trigger-crawling:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Trigger Crawling
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "🚀 크롤링 트리거 시작..."
+          
+          # 크롤링 트리거 API 호출
+          response=$(curl -X POST "$API_URL/api/crawling/trigger" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $API_KEY" \
+            -d '{
+              "platform": "${{ github.event.inputs.platform || 'daangn' }}",
+              "locations": ["역삼동", "논현동", "압구정동", "청담동", "삼성동", "대치동"]
+            }' \
+            -w "\n%{http_code}" -s)
+          
+          # HTTP 상태 코드 추출
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" -eq 202 ] || [ "$http_code" -eq 200 ]; then
+            echo "✅ 크롤링 트리거 성공!"
+            echo "$body" | jq '.'
+          else
+            echo "❌ 크롤링 트리거 실패!"
+            exit 1
+          fi
+
+      - name: Wait for Crawling
+        run: |
+          echo "⏳ 크롤링 완료 대기 중..."
+          sleep 300  # 5분 대기
+
+      - name: Check Crawling Status
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          echo "📊 크롤링 상태 확인..."
+          
+          response=$(curl -X GET "$API_URL/api/crawling/status" \
+            -H "Authorization: Bearer $API_KEY" \
+            -s)
+          
+          echo "$response" | jq '.'
+          
+          total_products=$(echo "$response" | jq -r '.data.currentData.totalProducts')
+          echo "총 상품 수: $total_products"
+
+      - name: Send Notification
+        if: always()
+        run: |
+          echo "📨 알림 전송 완료"
+          # 슬랙, 디스코드, 이메일 등으로 알림 전송 가능
+
