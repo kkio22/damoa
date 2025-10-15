@@ -6,11 +6,11 @@ set -e
 PROJECT_ID="carbide-sensor-475207-a2"
 REGION="asia-northeast3"
 ZONE="asia-northeast3-a"
-VM_NAME="smarttrade-server"
+VM_NAME="damoa-server"
 MACHINE_TYPE="e2-small"  # 2GB RAM, 2 vCPU (월 $15)
 # MACHINE_TYPE="e2-micro"  # 0.5GB RAM (월 $7, 더 저렴하지만 메모리 부족 가능)
 
-echo "🚀 SmartTrade VM 생성 중..."
+echo "🚀 Damoa VM 생성 중..."
 echo "📍 프로젝트: $PROJECT_ID"
 echo "📍 리전: $REGION"
 echo "📍 VM 이름: $VM_NAME"
@@ -30,7 +30,7 @@ gcloud compute instances create $VM_NAME \
   --no-shielded-secure-boot \
   --shielded-vtpm \
   --shielded-integrity-monitoring \
-  --labels=app=smarttrade,env=production \
+  --labels=app=damoa,env=production \
   --reservation-affinity=any
 
 echo "✅ VM 생성 완료!"
@@ -38,7 +38,7 @@ echo "✅ VM 생성 완료!"
 # 2. 방화벽 규칙 생성 (HTTP/HTTPS)
 echo "🔥 방화벽 규칙 생성 중..."
 
-gcloud compute firewall-rules create allow-http-smarttrade \
+gcloud compute firewall-rules create allow-http-damoa \
   --project=$PROJECT_ID \
   --direction=INGRESS \
   --priority=1000 \
@@ -47,10 +47,10 @@ gcloud compute firewall-rules create allow-http-smarttrade \
   --rules=tcp:80 \
   --source-ranges=0.0.0.0/0 \
   --target-tags=http-server \
-  --description="Allow HTTP traffic for SmartTrade frontend" \
+  --description="Allow HTTP traffic for Damoa frontend" \
   || echo "방화벽 규칙이 이미 존재합니다"
 
-gcloud compute firewall-rules create allow-backend-smarttrade \
+gcloud compute firewall-rules create allow-backend-damoa \
   --project=$PROJECT_ID \
   --direction=INGRESS \
   --priority=1000 \
@@ -59,7 +59,7 @@ gcloud compute firewall-rules create allow-backend-smarttrade \
   --rules=tcp:8080 \
   --source-ranges=0.0.0.0/0 \
   --target-tags=http-server \
-  --description="Allow backend API traffic for SmartTrade" \
+  --description="Allow backend API traffic for Damoa" \
   || echo "방화벽 규칙이 이미 존재합니다"
 
 echo "✅ 방화벽 규칙 설정 완료!"
