@@ -106,11 +106,11 @@ jobs:
           EOF
               
               echo '🐳 Docker Compose 실행...'
-              docker compose -f docker-compose.prod.yml down || true
-              docker compose -f docker-compose.prod.yml up -d --build
+              sudo docker compose -f docker-compose.prod.yml down || true
+              sudo docker compose -f docker-compose.prod.yml up -d --build
               
               echo '✅ 배포 완료!'
-              docker compose -f docker-compose.prod.yml ps
+              sudo docker compose -f docker-compose.prod.yml ps
             "
 
       - name: Get VM External IP

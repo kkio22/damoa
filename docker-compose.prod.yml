@@ -1,8 +1,6 @@
 # 프로덕션용 Docker Compose 설정
 # GCP 배포 전 로컬 테스트용
 
-version: '3.8'
-
 services:
   # PostgreSQL 데이터베이스 (Cloud SQL 대신 로컬 테스트용)
   postgres:
