@@ -89,27 +89,27 @@ jobs:
       - name: Build Backend Image
         run: |
           docker build \
-            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
-            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.BACKEND_SERVICE }}:latest \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.BACKEND_SERVICE }}:latest \
             ./backend
 
       - name: Build Frontend Image
         run: |
           docker build \
             --build-arg REACT_APP_API_URL=https://api.smarttrade.example.com \
-            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
-            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.FRONTEND_SERVICE }}:latest \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.FRONTEND_SERVICE }}:latest \
             ./frontend
 
       - name: Push Backend Image
         run: |
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.BACKEND_SERVICE }}:latest
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.BACKEND_SERVICE }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.BACKEND_SERVICE }}:latest
 
       - name: Push Frontend Image
         run: |
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
-          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.FRONTEND_SERVICE }}:latest
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.FRONTEND_SERVICE }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.FRONTEND_SERVICE }}:latest
 
   # 3. Cloud Run 배포
   deploy-to-cloud-run:
@@ -130,7 +130,7 @@ jobs:
       - name: Deploy Backend to Cloud Run
         run: |
           gcloud run deploy ${{ env.BACKEND_SERVICE }} \
-            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.BACKEND_SERVICE }}:${{ github.sha }} \
             --region=${{ env.REGION }} \
             --platform=managed \
             --allow-unauthenticated \
@@ -146,7 +146,7 @@ jobs:
       - name: Deploy Frontend to Cloud Run
         run: |
           gcloud run deploy ${{ env.FRONTEND_SERVICE }} \
-            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/smarttrade/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/damoa/${{ env.FRONTEND_SERVICE }}:${{ github.sha }} \
             --region=${{ env.REGION }} \
             --platform=managed \
             --allow-unauthenticated \
