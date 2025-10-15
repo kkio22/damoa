@@ -91,7 +91,7 @@ jobs:
             --command="
               set -e
               echo '📦 코드 업데이트 중...'
-              cd ~/usedTrade || (git clone https://github.com/kkio22/usedTrade.git ~/usedTrade && cd ~/usedTrade)
+              cd ~/damoa || (git clone https://github.com/kkio22/damoa.git ~/damoa && cd ~/damoa)
               git fetch origin
               git checkout main
               git pull origin main
