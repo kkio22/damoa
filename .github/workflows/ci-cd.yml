@@ -89,14 +89,14 @@ jobs:
           # HTTP (80) 규칙은 기존 http-server 태그 활용 (이미 존재할 가능성)
           # 없으면 생성
           if ! gcloud compute firewall-rules describe default-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
-            if ! gcloud compute firewall-rules describe smarttrade-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
+            if ! gcloud compute firewall-rules describe damoa-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
               echo "HTTP 방화벽 규칙 생성 중..."
-              gcloud compute firewall-rules create smarttrade-allow-http \
+              gcloud compute firewall-rules create damoa-allow-http \
                 --project=${{ env.PROJECT_ID }} \
                 --allow=tcp:80 \
                 --source-ranges=0.0.0.0/0 \
-                --target-tags=http-server,smarttrade-server \
-                --description="Allow HTTP traffic for SmartTrade frontend"
+                --target-tags=http-server,damoa-server \
+                --description="Allow HTTP traffic for Damoa frontend"
             else
               echo "✅ HTTP 방화벽 규칙 이미 존재"
             fi
@@ -105,14 +105,14 @@ jobs:
           fi
           
           # Backend API (8080) 규칙 확인 및 생성
-          if ! gcloud compute firewall-rules describe smarttrade-allow-backend --project=${{ env.PROJECT_ID }} 2>/dev/null; then
+          if ! gcloud compute firewall-rules describe damoa-allow-backend --project=${{ env.PROJECT_ID }} 2>/dev/null; then
             echo "Backend 방화벽 규칙 생성 중..."
-            gcloud compute firewall-rules create smarttrade-allow-backend \
+            gcloud compute firewall-rules create damoa-allow-backend \
               --project=${{ env.PROJECT_ID }} \
               --allow=tcp:8080 \
               --source-ranges=0.0.0.0/0 \
-              --target-tags=smarttrade-server \
-              --description="Allow Backend API traffic for SmartTrade"
+              --target-tags=damoa-server \
+              --description="Allow Backend API traffic for Damoa"
           else
             echo "✅ Backend 방화벽 규칙 이미 존재"
           fi
@@ -186,7 +186,7 @@ jobs:
           echo "🔍 방화벽 규칙 확인:"
           gcloud compute firewall-rules list \
             --project=${{ env.PROJECT_ID }} \
-            --filter="targetTags:smarttrade-server OR targetTags:http-server" \
+            --filter="targetTags:damoa-server OR targetTags:http-server" \
             --format="table(name,targetTags,allowed)"
 
       - name: Wait for Services
