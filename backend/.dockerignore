@@ -1,13 +1,37 @@
-node_modules
-npm-debug.log
+# Node modules
+node_modules/
+npm-debug.log*
+
+# 환경 변수
 .env
-.env.local
-.git
-.gitignore
-dist
-*.md
-.vscode
-.idea
-coverage
+.env.*
+
+# 테스트
+coverage/
+*.test.ts
+*.spec.ts
+__tests__/
+
+# 로그
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
 .DS_Store
 
+# Git
+.git/
+
+# Docker
+Dockerfile
+.dockerignore
+
+# 문서
+*.md
+
+# 빌드 결과 (TypeScript로 다시 빌드됨)
+dist/

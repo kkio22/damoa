@@ -1,0 +1,123 @@
+# 프로덕션용 Docker Compose 설정
+# GCP 배포 전 로컬 테스트용
+
+version: '3.8'
+
+services:
+  # PostgreSQL 데이터베이스 (Cloud SQL 대신 로컬 테스트용)
+  postgres:
+    image: postgres:14
+    container_name: smarttrade-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_DB: smarttrade_prod
+      POSTGRES_USER: smarttrade_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smarttrade_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smarttrade-prod-network
+
+  # Redis 캐시 (Memory Store 대신 로컬 테스트용)
+  redis:
+    image: redis:7
+    container_name: smarttrade-redis-prod
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smarttrade-prod-network
+
+  # 백엔드 API 서버 (프로덕션 모드)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smarttrade-backend-prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: smarttrade_prod
+      DB_USER: smarttrade_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ENABLE_CRAWLER_SCHEDULER: ${ENABLE_CRAWLER_SCHEDULER:-true}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/logs:/app/logs
+    networks:
+      - smarttrade-prod-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    command: >
+      sh -c "
+        echo '⏳ Waiting for database...' &&
+        sleep 10 &&
+        echo '📊 Running database migration...' &&
+        npx ts-node scripts/migrate.ts || echo '⚠️  Migration failed, tables may already exist' &&
+        echo '🚀 Starting production server...' &&
+        node dist/server.js
+      "
+
+  # 프론트엔드 웹 서버 (프로덕션 모드)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:8080}
+    container_name: smarttrade-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - smarttrade-prod-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_prod_data:
+    driver: local
+  redis_prod_data:
+    driver: local
+
+networks:
+  smarttrade-prod-network:
+    driver: bridge
+

@@ -1,0 +1,104 @@
+# Google Cloud Build 설정 파일
+# GitHub와 연동하여 자동 빌드 및 배포
+
+steps:
+  # 1. Backend 이미지 빌드
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-backend'
+    args:
+      - 'build'
+      - '-t'
+      - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-backend:$COMMIT_SHA'
+      - '-t'
+      - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-backend:latest'
+      - './backend'
+
+  # 2. Frontend 이미지 빌드
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-frontend'
+    args:
+      - 'build'
+      - '--build-arg'
+      - 'REACT_APP_API_URL=https://smarttrade-backend-XXXXXXXXXX.run.app'
+      - '-t'
+      - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-frontend:$COMMIT_SHA'
+      - '-t'
+      - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-frontend:latest'
+      - './frontend'
+
+  # 3. Backend 이미지 푸시
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-backend'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-backend'
+    waitFor: ['build-backend']
+
+  # 4. Frontend 이미지 푸시
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-frontend'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-frontend'
+    waitFor: ['build-frontend']
+
+  # 5. Backend Cloud Run 배포
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-backend'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'smarttrade-backend'
+      - '--image=asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-backend:$COMMIT_SHA'
+      - '--region=asia-northeast3'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=8080'
+      - '--memory=1Gi'
+      - '--cpu=1'
+      - '--min-instances=1'
+      - '--max-instances=10'
+      - '--set-env-vars=NODE_ENV=production,PORT=8080'
+      - '--set-secrets=DB_PASSWORD=DB_PASSWORD:latest,REDIS_PASSWORD=REDIS_PASSWORD:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest'
+      - '--set-cloudsql-instances=${_CLOUD_SQL_CONNECTION_NAME}'
+    waitFor: ['push-backend']
+
+  # 6. Frontend Cloud Run 배포
+  - name: 'gcr.io/cloud-builders/gcloud'
+    id: 'deploy-frontend'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'smarttrade-frontend'
+      - '--image=asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-frontend:$COMMIT_SHA'
+      - '--region=asia-northeast3'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--port=80'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--min-instances=1'
+      - '--max-instances=5'
+    waitFor: ['push-frontend']
+
+# 빌드 옵션
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
+
+# 타임아웃 설정
+timeout: '1800s'
+
+# 이미지 저장소
+images:
+  - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-backend:$COMMIT_SHA'
+  - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-backend:latest'
+  - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-frontend:$COMMIT_SHA'
+  - 'asia-northeast3-docker.pkg.dev/$PROJECT_ID/smarttrade/smarttrade-frontend:latest'
+
+# Substitution 변수
+substitutions:
+  _CLOUD_SQL_CONNECTION_NAME: 'YOUR_PROJECT_ID:asia-northeast3:smarttrade-db'
+
