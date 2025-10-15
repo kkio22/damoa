@@ -101,7 +101,7 @@ jobs:
           NODE_ENV=production
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          ENABLE_CRAWLER_SCHEDULER=true
+          ENABLE_CRAWLER_SCHEDULER=false
           REACT_APP_API_URL=http://\$(curl -s ifconfig.me):8080
           EOF
               
