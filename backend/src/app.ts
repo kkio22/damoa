@@ -8,6 +8,7 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { initCrawlingModule } from './domain/crawling';
+import { initAuthModule } from './domain/auth';
 import { sanitizeInput, preventSQLInjection } from './middlewares/validation.middleware';
 
 class App {
@@ -119,6 +120,12 @@ class App {
     // 크롤링 모듈 초기화
     const container = await initCrawlingModule();
 
+    // Auth 모듈 초기화 (회원가입/로그인)
+    const pgPool = container.getPostgresPool();
+    const authContainer = await initAuthModule(pgPool);
+    const authRoutes = authContainer.getRoutes();
+    this.app.use('/api/auth', authRoutes.getRouter());
+
     // 크롤링 라우트 등록 (Postman 트리거용)
     const crawlingRoutes = container.getCrawlingRoutes();
     this.app.use('/api/crawling', crawlingRoutes.getRouter());
@@ -149,6 +156,7 @@ class App {
         version: '1.0.0',
         endpoints: {
           health: '/health',
+          auth: '/api/auth',
           areas: '/api/areas',
           crawling: '/api/crawling',
           search: '/api/search',
@@ -183,6 +191,7 @@ class App {
 📡 Port: ${port}
 🌐 URL: http://localhost:${port}
 📊 Health: http://localhost:${port}/health
+🔐 Auth API: http://localhost:${port}/api/auth
 🕷️  Crawling API: http://localhost:${port}/api/crawling
 🔍 Search API: http://localhost:${port}/api/search
 🤖 AI Analysis API: http://localhost:${port}/api/ai

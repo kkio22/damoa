@@ -130,6 +130,42 @@ const createSearchLogsTable = async () => {
 };
 
 /**
+ * users 테이블 생성 (회원가입/로그인)
+ */
+const createUsersTable = async () => {
+  const query = `
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      name VARCHAR(100) NOT NULL,
+      phone VARCHAR(20) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- 인덱스 생성
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+    -- 이메일 형식 체크
+    ALTER TABLE users 
+      DROP CONSTRAINT IF EXISTS chk_email_format;
+
+    ALTER TABLE users 
+      ADD CONSTRAINT chk_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$');
+  `;
+
+  try {
+    await pool.query(query);
+    console.log('✅ users 테이블 생성 완료');
+  } catch (error) {
+    console.error('❌ users 테이블 생성 실패:', error);
+    throw error;
+  }
+};
+
+/**
  * 마이그레이션 실행
  */
 const runMigration = async () => {
@@ -145,6 +181,7 @@ const runMigration = async () => {
     await createAreasTable();
     await createCrawlingLogsTable();
     await createSearchLogsTable();
+    await createUsersTable();
 
     console.log('\n✅ 마이그레이션 완료!');
     process.exit(0);
