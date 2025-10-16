@@ -62,8 +62,8 @@ export class CrawlingService {
         throw new Error('크롤링할 지역이 없습니다.');
       }
 
-      // 각 지역별로 크롤링
-      let totalProducts = 0;
+      // 각 지역별로 크롤링 후 모든 상품을 모음
+      const allProducts: Product[] = [];
       const processedLocations: string[] = [];
 
       for (const area of targetAreas) {
@@ -72,15 +72,22 @@ export class CrawlingService {
         const products = await this.crawlDaangnByArea(area);
         
         if (products.length > 0) {
-          // Redis에 저장
-          await this.crawlingRepo.saveProductsByLocation(area.name, products);
-          totalProducts += products.length;
+          allProducts.push(...products);
           processedLocations.push(area.name);
+          console.log(`  ✅ ${products.length}개 상품 수집 완료`);
         }
 
         // 요청 간격 (Rate Limiting 방지)
         await this.delay(2000); // 2초 대기
       }
+
+      // 플랫폼 단위로 Redis에 저장
+      if (allProducts.length > 0) {
+        await this.crawlingRepo.saveProductsByPlatform('daangn', allProducts);
+        console.log(`\n💾 Redis 저장 완료: daangn:items - ${allProducts.length}개 상품`);
+      }
+
+      const totalProducts = allProducts.length;
 
       const duration = Math.floor((Date.now() - startTime) / 1000);
       console.log(`\n${'='.repeat(60)}`);

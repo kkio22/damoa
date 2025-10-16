@@ -24,18 +24,34 @@ export class CrawlingRepository {
   }
 
   /**
-   * 지역별 상품 저장
-   * Key: {지역명}:items
+   * 플랫폼별 상품 저장
+   * Key: {platform}:items
    * Value: [Product, Product, ...]
    */
-  async saveProductsByLocation(location: string, products: Product[]): Promise<void> {
+  async saveProductsByPlatform(platform: string, products: Product[]): Promise<void> {
     await this.ensureConnection();
 
-    const key = `${location}:items`;
+    const key = `${platform}:items`;
     const value = JSON.stringify(products);
 
     await this.redisClient.setEx(key, this.TTL_24_HOURS, value);
     console.log(`✅ Redis 저장: ${key} - ${products.length}개 상품`);
+  }
+
+  /**
+   * 플랫폼별 상품 조회
+   */
+  async getProductsByPlatform(platform: string): Promise<Product[]> {
+    await this.ensureConnection();
+
+    const key = `${platform}:items`;
+    const data = await this.redisClient.get(key);
+
+    if (!data) {
+      return [];
+    }
+
+    return JSON.parse(data) as Product[];
   }
 
   /**
@@ -55,16 +71,19 @@ export class CrawlingRepository {
   }
 
   /**
-   * 모든 지역의 상품 조회
+   * 모든 플랫폼의 상품 조회
    */
   async getAllProducts(): Promise<Product[]> {
     await this.ensureConnection();
 
-    // *:items 패턴으로 모든 지역 키 찾기
+    // *:items 패턴으로 모든 플랫폼 키 찾기 (daangn:items, bungae:items 등)
     const keys = await this.redisClient.keys('*:items');
     const allProducts: Product[] = [];
 
     for (const key of keys) {
+      // backup 키는 제외
+      if (key.includes(':backup')) continue;
+      
       const data = await this.redisClient.get(key);
       if (data) {
         const products = JSON.parse(data) as Product[];
@@ -76,7 +95,18 @@ export class CrawlingRepository {
   }
 
   /**
-   * 특정 지역 데이터 삭제
+   * 특정 플랫폼 데이터 삭제
+   */
+  async deleteProductsByPlatform(platform: string): Promise<void> {
+    await this.ensureConnection();
+
+    const key = `${platform}:items`;
+    await this.redisClient.del(key);
+    console.log(`🗑️  Redis 삭제: ${key}`);
+  }
+
+  /**
+   * 특정 지역 데이터 삭제 (하위 호환성)
    */
   async deleteProductsByLocation(location: string): Promise<void> {
     await this.ensureConnection();
@@ -93,9 +123,12 @@ export class CrawlingRepository {
     await this.ensureConnection();
 
     const keys = await this.redisClient.keys('*:items');
-    if (keys.length > 0) {
-      await this.redisClient.del(keys);
-      console.log(`🗑️  Redis 삭제: ${keys.length}개 지역 데이터`);
+    // backup 키는 제외
+    const dataKeys = keys.filter(key => !key.includes(':backup'));
+    
+    if (dataKeys.length > 0) {
+      await this.redisClient.del(dataKeys);
+      console.log(`🗑️  Redis 삭제: ${dataKeys.length}개 플랫폼 데이터`);
     }
   }
 
@@ -103,30 +136,32 @@ export class CrawlingRepository {
    * Redis 통계
    */
   async getStats(): Promise<{
-    totalLocations: number;
+    totalPlatforms: number;
     totalProducts: number;
-    locations: { [location: string]: number };
+    platforms: { [platform: string]: number };
   }> {
     await this.ensureConnection();
 
     const keys = await this.redisClient.keys('*:items');
-    const locations: { [location: string]: number } = {};
+    // backup 키 제외
+    const dataKeys = keys.filter(key => !key.includes(':backup'));
+    const platforms: { [platform: string]: number } = {};
     let totalProducts = 0;
 
-    for (const key of keys) {
-      const location = key.replace(':items', '');
+    for (const key of dataKeys) {
+      const platform = key.replace(':items', '');
       const data = await this.redisClient.get(key);
       if (data) {
         const products = JSON.parse(data) as Product[];
-        locations[location] = products.length;
+        platforms[platform] = products.length;
         totalProducts += products.length;
       }
     }
 
     return {
-      totalLocations: keys.length,
+      totalPlatforms: dataKeys.length,
       totalProducts,
-      locations,
+      platforms,
     };
   }
 
@@ -138,9 +173,11 @@ export class CrawlingRepository {
     await this.ensureConnection();
 
     const keys = await this.redisClient.keys('*:items');
+    // 이미 백업 키는 제외
+    const dataKeys = keys.filter(key => !key.includes(':backup'));
     const backupKeys: string[] = [];
 
-    for (const key of keys) {
+    for (const key of dataKeys) {
       const backupKey = `${key}:backup`;
       const data = await this.redisClient.get(key);
       
@@ -150,7 +187,7 @@ export class CrawlingRepository {
       }
     }
 
-    console.log(`✅ Redis 백업: ${backupKeys.length}개 키`);
+    console.log(`✅ Redis 백업: ${backupKeys.length}개 플랫폼 키`);
     return backupKeys;
   }
 
