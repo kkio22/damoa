@@ -35,7 +35,7 @@ const styles = {
     padding: '60px 40px',
     textAlign: 'center',
     margin: '20px 0',
-    border: '2px solid #ef4444',
+    border: '2px solid #2563eb',
   },
   iconWrapper: {
     marginBottom: '20px',

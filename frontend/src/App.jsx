@@ -10,7 +10,7 @@ function App() {
     <div style={styles.app}>
       {/* 헤더 */}
       <header style={styles.header}>
-        <h1 style={styles.logo}>🌊 Damoa</h1>
+        <h1 style={styles.logo}>Damoa</h1>
         <p style={styles.subtitle}>중고 상품 통합 검색 서비스</p>
       </header>
 
@@ -21,7 +21,7 @@ function App() {
 
       {/* 푸터 */}
       <footer style={styles.footer}>
-        <p>© 2025 Damoa. All rights reserved.</p>
+        <p>© 2025 Damoa</p>
       </footer>
     </div>
   );
