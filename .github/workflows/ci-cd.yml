@@ -102,6 +102,8 @@ jobs:
           NODE_ENV=production
           DB_PASSWORD=${{ secrets.DB_PASSWORD }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN=7d
           ENABLE_CRAWLER_SCHEDULER=false
           REACT_APP_API_URL=http://\$(curl -s ifconfig.me):8080
           CORS_ORIGIN=http://\$(curl -s ifconfig.me)
