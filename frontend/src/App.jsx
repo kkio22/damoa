@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProductSearch from './components/ProductSearch';
 import Register from './components/Register';
 import Login from './components/Login';
-import ProtectedRoute from './components/ProtectedRoute';
 
 // 메인 레이아웃 컴포넌트
 function MainLayout({ children }) {
