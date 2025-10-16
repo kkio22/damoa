@@ -81,9 +81,9 @@ export class AuthService {
       email: user.email,
     };
 
-    const accessToken = jwt.sign(payload, this.jwtSecret, {
+    const accessToken = jwt.sign(payload as object, this.jwtSecret, {
       expiresIn: this.jwtExpiresIn,
-    });
+    } as jwt.SignOptions);
 
     // 4. 사용자 정보 반환 (비밀번호 제외)
     const userResponse: UserResponse = {
