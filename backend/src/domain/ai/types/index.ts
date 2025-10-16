@@ -85,3 +85,81 @@ export interface AICacheKey {
   timestamp: number;
 }
 
+/**
+ * 벡터 임베딩 데이터
+ */
+export interface VectorEmbedding {
+  productId: string;
+  vector: number[];
+  metadata: {
+    title: string;
+    price: number;
+    location: string;
+    createdAt: string;
+  };
+}
+
+/**
+ * 유사 상품 추천 결과
+ */
+export interface SimilarProductResult {
+  product: Product;
+  similarity: number;  // 0-1 사이의 유사도
+  reason: string;
+}
+
+/**
+ * 가격 예측 결과
+ */
+export interface PricePrediction {
+  predictedPrice: number;
+  confidence: number;  // 0-1 사이의 신뢰도
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  reasoning: string;
+}
+
+/**
+ * 사기 탐지 결과
+ */
+export interface FraudDetection {
+  isSuspicious: boolean;
+  riskScore: number;  // 0-100 점수 (높을수록 위험)
+  redFlags: string[];
+  recommendations: string[];
+}
+
+/**
+ * 자동 카테고리 분류 결과
+ */
+export interface CategoryClassification {
+  category: string;
+  confidence: number;
+  subCategories: string[];
+  reasoning: string;
+}
+
+/**
+ * 챗봇 대화 컨텍스트
+ */
+export interface ChatContext {
+  userId?: string;
+  conversationHistory: ChatMessage[];
+  currentQuery: string;
+  relatedProducts?: Product[];
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface ChatResponse {
+  message: string;
+  suggestedProducts?: Product[];
+  suggestedQueries?: string[];
+}
+

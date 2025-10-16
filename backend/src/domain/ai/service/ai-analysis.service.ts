@@ -1,6 +1,6 @@
 /**
- * AI 분석 서비스 (todolist 3일차)
- * OpenAI + LangGraph 통합
+ * AI 분석 서비스 (통합 버전)
+ * 벡터 임베딩 + 고급 AI 기능 통합
  */
 
 import { ChatOpenAI } from '@langchain/openai';
@@ -12,13 +12,22 @@ import {
   SuggestedFilters
 } from '../types';
 import { Product } from '../../crawling/types';
+import { AIEmbeddingService } from './ai-embedding.service';
+import { AIAdvancedService } from './ai-advanced.service';
 
 export class AIAnalysisService {
-  private llm!: ChatOpenAI; // definite assignment assertion
+  private llm!: ChatOpenAI;
   private isEnabled: boolean;
+  private embeddingService: AIEmbeddingService;
+  private advancedService: AIAdvancedService;
+  private useVectorSearch: boolean = true;  // 벡터 검색 활성화
 
   constructor(apiKey?: string) {
     this.isEnabled = !!apiKey && apiKey.length > 0;
+    
+    // 새로운 AI 서비스들 초기화
+    this.embeddingService = new AIEmbeddingService(apiKey);
+    this.advancedService = new AIAdvancedService(apiKey);
     
     if (this.isEnabled) {
       this.llm = new ChatOpenAI({
@@ -26,14 +35,16 @@ export class AIAnalysisService {
         modelName: 'gpt-3.5-turbo',
         temperature: 0.7,
       });
-      console.log('✅ AI 분석 서비스 초기화 완료 (OpenAI)');
+      console.log('✅ AI 분석 서비스 초기화 완료 (통합 버전)');
+      console.log('   - 벡터 임베딩: 활성화');
+      console.log('   - 고급 AI 기능: 활성화');
     } else {
       console.log('⏸️  AI 분석 서비스 비활성화 (OPENAI_API_KEY 없음)');
     }
   }
 
   /**
-   * 상품 분석 (메인 함수)
+   * 상품 분석 (메인 함수) - 통합 버전
    */
   async analyzeProducts(request: AIAnalyzeRequest): Promise<AIAnalyzeResponse> {
     if (!this.isEnabled) {
@@ -41,19 +52,32 @@ export class AIAnalysisService {
     }
 
     try {
-      console.log(`🤖 AI 분석 시작: "${request.query}"`);
+      console.log(`🤖 AI 분석 시작 (통합): "${request.query}"`);
       console.log(`📦 상품 수: ${request.products.length}개`);
 
       // 1. 검색어 분석 및 키워드 추출
       const relatedKeywords = await this.extractKeywords(request.query);
 
-      // 2. 상품 점수 계산 및 추천
-      const recommendations = await this.scoreProducts(
-        request.query,
-        request.products,
-        relatedKeywords,
-        request.maxResults || 10
-      );
+      // 2. 상품 점수 계산 및 추천 (벡터 검색 우선!)
+      let recommendations: ProductRecommendation[];
+      
+      if (this.useVectorSearch && this.isEnabled) {
+        console.log('🔍 벡터 임베딩 검색 사용 (고급)');
+        recommendations = await this.scoreProductsWithVectorSearch(
+          request.query,
+          request.products,
+          relatedKeywords,
+          request.maxResults || 10
+        );
+      } else {
+        console.log('📝 규칙 기반 검색 사용 (기본)');
+        recommendations = await this.scoreProducts(
+          request.query,
+          request.products,
+          relatedKeywords,
+          request.maxResults || 10
+        );
+      }
 
       // 3. 시장 인사이트 생성
       const insights = await this.generateInsights(
@@ -67,6 +91,35 @@ export class AIAnalysisService {
         insights
       );
 
+      // 5. 고급 AI 기능 추가 (TOP 1 상품에 대해)
+      let additionalInfo: any = {};
+      
+      if (recommendations.length > 0 && this.isEnabled) {
+        const topProduct = recommendations[0].product;
+        
+        // 가격 예측
+        const pricePrediction = await this.advancedService.predictPrice(
+          topProduct,
+          request.products
+        );
+        
+        // 사기 탐지
+        const fraudDetection = await this.advancedService.detectFraud(topProduct);
+        
+        // 카테고리 분류
+        const categoryClassification = await this.advancedService.classifyCategory(topProduct);
+        
+        additionalInfo = {
+          topProductAnalysis: {
+            pricePrediction,
+            fraudDetection,
+            categoryClassification,
+          },
+        };
+        
+        console.log('✨ 고급 AI 분석 완료');
+      }
+
       console.log(`✅ AI 분석 완료: ${recommendations.length}개 추천`);
 
       return {
@@ -78,11 +131,48 @@ export class AIAnalysisService {
         insights,
         suggestedFilters,
         relatedKeywords,
+        ...additionalInfo,  // 고급 AI 정보 포함
       };
 
     } catch (error) {
       console.error('❌ AI 분석 실패:', error);
       return this.getFallbackResponse(request);
+    }
+  }
+
+  /**
+   * 벡터 임베딩 기반 상품 점수 계산 (신규!)
+   */
+  private async scoreProductsWithVectorSearch(
+    query: string,
+    products: Product[],
+    keywords: string[],
+    maxResults: number
+  ): Promise<ProductRecommendation[]> {
+    try {
+      // 벡터 검색으로 유사도 기반 점수 계산
+      const vectorResults = await this.embeddingService.searchByVector(
+        query,
+        products,
+        maxResults * 2  // 여유있게 가져옴
+      );
+
+      // ProductRecommendation 형식으로 변환
+      const recommendations: ProductRecommendation[] = vectorResults.map(result => ({
+        product: result.product,
+        score: result.score,  // 이미 0-100 점수
+        reasons: [
+          `벡터 유사도: ${result.score.toFixed(1)}점`,
+          ...this.generateReasons(result.product, query, keywords),
+        ],
+        matchedKeywords: this.findMatchedKeywords(result.product, keywords),
+      }));
+
+      return recommendations.slice(0, maxResults);
+    } catch (error) {
+      console.error('벡터 검색 실패, 규칙 기반으로 전환:', error);
+      // 벡터 검색 실패 시 기존 방식으로 폴백
+      return this.scoreProducts(query, products, keywords, maxResults);
     }
   }
 

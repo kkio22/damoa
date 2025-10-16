@@ -18,12 +18,12 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
 const ProductSearch = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [hasSearched, setHasSearched] = useState(false); // 검색 실행 여부 추적
   
   // 페이지네이션 상태 (todolist 2일차)
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,12 +33,6 @@ const ProductSearch = () => {
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [showAiAnalysis, setShowAiAnalysis] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
-
-  // 주요 동 목록
-  const locations = [
-    '전체',
-    '역삼동'
-  ];
 
   /**
    * 상품 검색 (POST /api/search - todolist 2일차)
@@ -56,16 +50,11 @@ const ProductSearch = () => {
     setProducts([]);
 
     try {
-      // 백엔드 API 형식에 맞춰 요청 구성
+      // 백엔드 API 형식에 맞춰 요청 구성 (전국 단위 검색)
       const requestBody = {
         query: searchQuery,
         filters: {},
       };
-
-      // 지역 필터 (배열 형식)
-      if (selectedLocation && selectedLocation !== '전체') {
-        requestBody.filters.locations = [selectedLocation];
-      }
 
       // 가격 필터
       if (priceRange.min || priceRange.max) {
@@ -103,7 +92,7 @@ const ProductSearch = () => {
   };
 
   /**
-   * AI 분석 실행 (todolist 3일차)
+   * AI 분석 실행 (todolist 3일차) - 전국 단위 검색
    */
   const handleAIAnalysis = async () => {
     if (products.length === 0) {
@@ -119,11 +108,6 @@ const ProductSearch = () => {
         query: searchQuery,
         maxResults: 10,
       };
-
-      // 지역 필터 적용
-      if (selectedLocation && selectedLocation !== '전체') {
-        requestBody.locations = [selectedLocation];
-      }
 
       console.log('🤖 AI 분석 요청:', requestBody);
 
@@ -144,7 +128,7 @@ const ProductSearch = () => {
   };
 
   /**
-   * AI 제안 필터 적용 (todolist 3일차)
+   * AI 제안 필터 적용 (todolist 3일차) - 가격 필터만
    */
   const handleApplyAIFilter = (filter) => {
     if (filter.type === 'priceRange') {
@@ -152,14 +136,12 @@ const ProductSearch = () => {
         min: filter.value.min.toString(),
         max: filter.value.max.toString(),
       });
-    } else if (filter.type === 'location') {
-      setSelectedLocation(filter.value);
+      
+      // 필터 적용 후 자동으로 재검색
+      setTimeout(() => {
+        document.querySelector('button[type="submit"]')?.click();
+      }, 100);
     }
-
-    // 필터 적용 후 자동으로 재검색
-    setTimeout(() => {
-      document.querySelector('button[type="submit"]')?.click();
-    }, 100);
   };
 
   /**
@@ -244,24 +226,8 @@ const ProductSearch = () => {
             </button>
           </div>
 
-          {/* 필터 */}
+          {/* 필터 - 전국 단위 검색 */}
           <div style={styles.filterGroup}>
-            {/* 지역 선택 */}
-            <div style={styles.filterItem}>
-              <label style={styles.filterLabel}>지역</label>
-              <select
-                value={selectedLocation}
-                onChange={(e) => setSelectedLocation(e.target.value)}
-                style={styles.filterSelect}
-              >
-                {locations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* 가격 범위 */}
             <div style={styles.filterItem}>
               <label style={styles.filterLabel}>최저가</label>
@@ -450,8 +416,8 @@ const ProductSearch = () => {
         </>
       )}
 
-      {/* 검색 결과 없음 (UI/UX 개선 - todolist 4일차) */}
-      {!loading && products.length === 0 && searchQuery && (
+      {/* 검색 결과 없음 (검색 버튼 클릭 후에만 표시) */}
+      {!loading && products.length === 0 && hasSearched && (
         <EmptyState
           icon="🔍"
           title="검색 결과가 없습니다"
@@ -459,8 +425,8 @@ const ProductSearch = () => {
           suggestions={[
             '검색어의 철자를 확인해보세요',
             '더 일반적인 검색어로 시도해보세요',
-            '다른 지역으로 검색해보세요',
-            '가격 범위를 넓혀보세요'
+            '가격 범위를 넓혀보세요',
+            '다른 키워드로 검색해보세요'
           ]}
         />
       )}
@@ -471,9 +437,10 @@ const ProductSearch = () => {
           <h3 style={styles.infoTitle}>💡 검색 팁</h3>
           <ul style={styles.infoList}>
             <li>상품명을 간단하게 입력해보세요 (예: 아이폰, 갤럭시, 에어팟)</li>
-            <li>지역을 선택하면 해당 지역의 상품만 볼 수 있어요</li>
+            <li>🌏 전국 단위 검색으로 더 많은 상품을 찾을 수 있어요</li>
             <li>가격 범위를 설정하면 더 정확한 검색이 가능해요</li>
-            <li>상품을 클릭하면 당근마켓 원본 페이지로 이동합니다</li>
+            <li>상품을 클릭하면 원본 거래 페이지로 이동합니다</li>
+            <li>🤖 AI 추천 기능으로 최적의 상품을 찾아보세요</li>
           </ul>
         </div>
       )}
@@ -525,11 +492,11 @@ const styles = {
     fontSize: '16px',
     fontWeight: 'bold',
     color: '#fff',
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#2563eb',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
+    transition: 'all 0.3s',
     whiteSpace: 'nowrap',
   },
   filterGroup: {
@@ -579,7 +546,7 @@ const styles = {
     color: '#333',
   },
   resultCount: {
-    color: '#ff6b35',
+    color: '#2563eb',
     marginLeft: '10px',
   },
   pageInfo: {
@@ -644,7 +611,7 @@ const styles = {
     top: '10px',
     left: '10px',
     padding: '5px 12px',
-    backgroundColor: 'rgba(255, 107, 53, 0.9)',
+    backgroundColor: 'rgba(37, 99, 235, 0.9)',
     color: '#fff',
     fontSize: '12px',
     fontWeight: 'bold',
@@ -666,7 +633,7 @@ const styles = {
     fontSize: '18px',
     fontWeight: 'bold',
     marginBottom: '8px',
-    color: '#ff6b35',
+    color: '#2563eb',
   },
   productLocation: {
     fontSize: '14px',
@@ -709,17 +676,17 @@ const styles = {
     lineHeight: '2',
     color: '#666',
   },
-  // AI 관련 스타일 (todolist 3일차)
+  // AI 관련 스타일 (todolist 3일차) - Damoa 파란색 테마
   aiButton: {
     padding: '15px 30px',
     fontSize: '16px',
     fontWeight: 'bold',
     color: '#fff',
-    backgroundColor: '#9c27b0',
+    backgroundColor: '#1e40af',
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    transition: 'background-color 0.3s',
+    transition: 'all 0.3s',
     whiteSpace: 'nowrap',
   },
   aiButtonDisabled: {
@@ -735,13 +702,13 @@ const styles = {
   },
   aiLoadingBox: {
     padding: '30px',
-    backgroundColor: '#f3e5f5',
-    border: '2px solid #9c27b0',
+    backgroundColor: '#eff6ff',
+    border: '2px solid #2563eb',
     borderRadius: '12px',
     marginBottom: '20px',
     textAlign: 'center',
     fontSize: '16px',
-    color: '#6a1b9a',
+    color: '#1e40af',
     fontWeight: '500',
   },
   aiResultSection: {
@@ -753,14 +720,15 @@ const styles = {
     alignItems: 'center',
     marginBottom: '20px',
     padding: '20px',
-    backgroundColor: '#f3e5f5',
+    backgroundColor: '#eff6ff',
     borderRadius: '12px',
+    border: '1px solid #dbeafe',
   },
   aiTitle: {
     margin: 0,
     fontSize: '24px',
     fontWeight: 'bold',
-    color: '#6a1b9a',
+    color: '#1e40af',
   },
   closeButton: {
     padding: '8px 16px',
@@ -791,7 +759,7 @@ const styles = {
     top: '10px',
     right: '10px',
     padding: '6px 12px',
-    backgroundColor: 'rgba(156, 39, 176, 0.95)',
+    backgroundColor: 'rgba(37, 99, 235, 0.95)',
     color: '#fff',
     fontSize: '12px',
     fontWeight: 'bold',
@@ -823,12 +791,12 @@ if (!document.getElementById('product-search-animations')) {
       box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
     }
 
-    /* 검색 인풋 포커스 효과 */
+    /* 검색 인풋 포커스 효과 - Damoa 파란색 */
     input[type="text"]:focus,
     input[type="number"]:focus,
     select:focus {
-      border-color: #ff6b35 !important;
-      box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1) !important;
+      border-color: #2563eb !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
     }
 
     /* 버튼 호버 효과 */

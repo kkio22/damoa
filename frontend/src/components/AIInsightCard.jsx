@@ -83,7 +83,7 @@ const styles = {
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
     padding: '20px',
     marginBottom: '20px',
-    border: '2px solid #ff6b35',
+    border: '2px solid #2563eb',
   },
   header: {
     display: 'flex',
@@ -112,9 +112,9 @@ const styles = {
     color: '#555',
     lineHeight: '1.6',
     padding: '10px',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#eff6ff',
     borderRadius: '8px',
-    borderLeft: '4px solid #ff6b35',
+    borderLeft: '4px solid #2563eb',
   },
   statsGrid: {
     display: 'grid',

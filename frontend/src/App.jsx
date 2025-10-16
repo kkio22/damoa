@@ -10,7 +10,7 @@ function App() {
     <div style={styles.app}>
       {/* 헤더 */}
       <header style={styles.header}>
-        <h1 style={styles.logo}>🛒 SmartTrade</h1>
+        <h1 style={styles.logo}>🌊 Damoa</h1>
         <p style={styles.subtitle}>중고 상품 통합 검색 서비스</p>
       </header>
 
@@ -21,44 +21,46 @@ function App() {
 
       {/* 푸터 */}
       <footer style={styles.footer}>
-        <p>© SmartTrade</p>
+        <p>© 2025 Damoa. All rights reserved.</p>
       </footer>
     </div>
   );
 }
 
-// 스타일
+// 스타일 - Damoa 파란색 테마
 const styles = {
   app: {
     minHeight: '100vh',
-    backgroundColor: '#f5f7fa',
+    backgroundColor: '#f0f4f8',
     fontFamily: 'system-ui, -apple-system, sans-serif',
   },
   header: {
-    backgroundColor: '#ff6b35',
+    background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
     color: '#fff',
     padding: '30px 20px',
     textAlign: 'center',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
   },
   logo: {
     fontSize: '36px',
     fontWeight: 'bold',
     margin: 0,
     marginBottom: '10px',
+    letterSpacing: '2px',
   },
   subtitle: {
     fontSize: '16px',
     margin: 0,
-    opacity: 0.9,
+    opacity: 0.95,
+    fontWeight: '300',
   },
   main: {
     padding: '20px',
     minHeight: 'calc(100vh - 280px)',
   },
   footer: {
-    backgroundColor: '#333',
-    color: '#fff',
+    backgroundColor: '#1e293b',
+    color: '#94a3b8',
     padding: '20px',
     textAlign: 'center',
     fontSize: '14px',

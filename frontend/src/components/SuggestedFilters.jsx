@@ -85,7 +85,7 @@ const styles = {
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
     padding: '20px',
     marginBottom: '20px',
-    border: '2px solid #4caf50',
+    border: '2px solid #2563eb',
   },
   header: {
     display: 'flex',
@@ -124,8 +124,8 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '15px 20px',
-    backgroundColor: '#f1f8e9',
-    border: '2px solid #4caf50',
+    backgroundColor: '#eff6ff',
+    border: '2px solid #2563eb',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -136,7 +136,7 @@ const styles = {
     color: '#333',
   },
   applyIcon: {
-    color: '#4caf50',
+    color: '#2563eb',
     fontSize: '14px',
     fontWeight: 'bold',
   },
@@ -150,8 +150,8 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: '12px 15px',
-    backgroundColor: '#f1f8e9',
-    border: '2px solid #4caf50',
+    backgroundColor: '#eff6ff',
+    border: '2px solid #2563eb',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s',
@@ -160,7 +160,7 @@ const styles = {
     color: '#333',
   },
   applyIconSmall: {
-    color: '#4caf50',
+    color: '#2563eb',
     fontSize: '12px',
   },
   hint: {

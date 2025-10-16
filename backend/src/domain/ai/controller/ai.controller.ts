@@ -29,7 +29,7 @@ export class AIController {
    */
   analyzeProducts = async (req: Request, res: Response): Promise<void> => {
     try {
-      const { query, locations, maxResults } = req.body;
+      const { query, maxResults } = req.body;
 
       if (!query || query.trim() === '') {
         res.status(400).json({
@@ -40,19 +40,13 @@ export class AIController {
       }
 
       console.log(`\n${'='.repeat(60)}`);
-      console.log(`🤖 AI 분석 요청: "${query}"`);
+      console.log(`🤖 AI 분석 요청 (전국): "${query}"`);
       console.log(`⏰ 시작 시간: ${new Date().toISOString()}`);
       console.log(`${'='.repeat(60)}\n`);
 
-      // 1. Redis에서 상품 데이터 가져오기
-      let products = await this.crawlingRepo.getAllProducts();
-      console.log(`📦 전체 상품: ${products.length}개`);
-
-      // 2. 지역 필터링 (옵션)
-      if (locations && Array.isArray(locations) && locations.length > 0) {
-        products = products.filter(p => locations.includes(p.location));
-        console.log(`📍 지역 필터링 후: ${products.length}개`);
-      }
+      // 1. Redis에서 상품 데이터 가져오기 (전국 단위)
+      const products = await this.crawlingRepo.getAllProducts();
+      console.log(`📦 전체 상품 (전국): ${products.length}개`);
 
       if (products.length === 0) {
         res.status(404).json({
@@ -62,15 +56,23 @@ export class AIController {
         return;
       }
 
-      // 3. 캐시 확인
+      // 3. 인기 검색어 카운트 증가
+      await this.cacheService.incrementSearchCount(query);
+
+      // 4. 캐시 확인
       const cached = await this.cacheService.get(query, products.length);
       if (cached) {
-        console.log('✅ 캐시된 결과 반환\n');
+        await this.cacheService.recordCacheHit();
+        console.log('✅ 캐시 히트! 결과 반환 (초고속)\n');
         res.status(200).json(cached);
         return;
       }
 
-      // 4. AI 분석 실행
+      // 5. 캐시 미스 기록
+      await this.cacheService.recordCacheMiss();
+      console.log('❌ 캐시 미스 - AI 분석 실행\n');
+
+      // 6. AI 분석 실행 (통합 버전 - 벡터 + 고급 AI)
       const request: AIAnalyzeRequest = {
         query,
         products,
@@ -79,10 +81,10 @@ export class AIController {
 
       const result = await this.aiService.analyzeProducts(request);
 
-      // 5. 캐시 저장
+      // 7. 캐시 저장
       await this.cacheService.set(query, products.length, result);
 
-      console.log('✅ AI 분석 완료\n');
+      console.log('✅ AI 분석 완료 & 캐시 저장\n');
       res.status(200).json(result);
 
     } catch (error) {
@@ -127,6 +129,52 @@ export class AIController {
       });
     } catch (error) {
       console.error('❌ AI 캐시 삭제 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : '알 수 없는 오류',
+      });
+    }
+  };
+
+  /**
+   * GET /api/ai/popular-queries
+   * 인기 검색어 TOP N 조회 (신규!)
+   */
+  getPopularQueries = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const topN = parseInt(req.query.limit as string) || 10;
+      const popular = await this.cacheService.getPopularQueries(topN);
+      
+      res.status(200).json({
+        success: true,
+        data: popular,
+      });
+    } catch (error) {
+      console.error('❌ 인기 검색어 조회 실패:', error);
+      res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : '알 수 없는 오류',
+      });
+    }
+  };
+
+  /**
+   * GET /api/ai/cache/hit-rate
+   * 캐시 히트율 조회 (신규!)
+   */
+  getCacheHitRate = async (req: Request, res: Response): Promise<void> => {
+    try {
+      const hitRate = await this.cacheService.getCacheHitRate();
+      
+      res.status(200).json({
+        success: true,
+        data: {
+          ...hitRate,
+          hitRatePercentage: `${(hitRate.hitRate * 100).toFixed(2)}%`,
+        },
+      });
+    } catch (error) {
+      console.error('❌ 캐시 히트율 조회 실패:', error);
       res.status(500).json({
         success: false,
         message: error instanceof Error ? error.message : '알 수 없는 오류',

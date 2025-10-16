@@ -202,7 +202,7 @@ const styles = {
   },
   priceAvgLabel: {
     padding: '4px 8px',
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#2563eb',
     color: '#fff',
     borderRadius: '4px',
     fontSize: '11px',
@@ -246,7 +246,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#2563eb',
     color: '#fff',
     borderRadius: '50%',
     fontSize: '14px',

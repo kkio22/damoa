@@ -18,12 +18,11 @@ export class AIRoutes {
   private initializeRoutes(): void {
     /**
      * POST /api/ai/analyze
-     * AI 상품 분석
+     * AI 상품 분석 (전국 단위)
      * 
      * Request Body:
      *   {
      *     "query": "아이폰",
-     *     "locations": ["역삼동", "논현동"] (optional),
      *     "maxResults": 10 (optional)
      *   }
      * 
@@ -52,6 +51,18 @@ export class AIRoutes {
      * AI 캐시 전체 삭제
      */
     this.router.delete('/cache', this.controller.clearCache);
+
+    /**
+     * GET /api/ai/popular-queries?limit=10
+     * 인기 검색어 TOP N 조회 (신규!)
+     */
+    this.router.get('/popular-queries', this.controller.getPopularQueries);
+
+    /**
+     * GET /api/ai/cache/hit-rate
+     * 캐시 히트율 조회 (신규!)
+     */
+    this.router.get('/cache/hit-rate', this.controller.getCacheHitRate);
   }
 
   /**
