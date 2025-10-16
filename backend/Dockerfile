@@ -16,8 +16,9 @@ COPY . .
 # TypeScript 빌드
 RUN npm run build
 
-# 프로덕션 의존성만 재설치
-RUN npm install --only=production
+# 프로덕션 의존성 + ts-node 설치 (마이그레이션용)
+RUN npm install --only=production && \
+    npm install ts-node typescript @types/node --no-save
 
 # 프로덕션 이미지
 FROM node:18-alpine
