@@ -82,42 +82,6 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Setup Firewall Rules
-        run: |
-          echo "🔥 방화벽 규칙 확인 중..."
-          
-          # HTTP (80) 규칙은 기존 http-server 태그 활용 (이미 존재할 가능성)
-          # 없으면 생성
-          if ! gcloud compute firewall-rules describe default-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
-            if ! gcloud compute firewall-rules describe damoa-allow-http --project=${{ env.PROJECT_ID }} 2>/dev/null; then
-              echo "HTTP 방화벽 규칙 생성 중..."
-              gcloud compute firewall-rules create damoa-allow-http \
-                --project=${{ env.PROJECT_ID }} \
-                --allow=tcp:80 \
-                --source-ranges=0.0.0.0/0 \
-                --target-tags=http-server,damoa-server \
-                --description="Allow HTTP traffic for Damoa frontend"
-            else
-              echo "✅ HTTP 방화벽 규칙 이미 존재"
-            fi
-          else
-            echo "✅ 기본 HTTP 방화벽 규칙 존재"
-          fi
-          
-          # Backend API (8080) 규칙 확인 및 생성
-          if ! gcloud compute firewall-rules describe damoa-allow-backend --project=${{ env.PROJECT_ID }} 2>/dev/null; then
-            echo "Backend 방화벽 규칙 생성 중..."
-            gcloud compute firewall-rules create damoa-allow-backend \
-              --project=${{ env.PROJECT_ID }} \
-              --allow=tcp:8080 \
-              --source-ranges=0.0.0.0/0 \
-              --target-tags=damoa-server \
-              --description="Allow Backend API traffic for Damoa"
-          else
-            echo "✅ Backend 방화벽 규칙 이미 존재"
-          fi
-          
-          echo "✅ 방화벽 규칙 설정 완료"
 
       - name: Deploy to VM
         run: |
