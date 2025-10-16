@@ -145,7 +145,7 @@ class App {
     this.app.get('/', (req, res) => {
       res.json({
         success: true,
-        message: 'SmartTrade API Server',
+        message: 'Damoa API Server',
         version: '1.0.0',
         endpoints: {
           health: '/health',
