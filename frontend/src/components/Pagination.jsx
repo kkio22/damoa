@@ -126,9 +126,9 @@ const styles = {
     minWidth: '40px',
   },
   buttonActive: {
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#2563eb',
     color: '#fff',
-    borderColor: '#ff6b35',
+    borderColor: '#2563eb',
     fontWeight: 'bold',
   },
   buttonDisabled: {

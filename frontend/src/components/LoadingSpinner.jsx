@@ -13,7 +13,7 @@ const LoadingSpinner = () => {
   );
 };
 
-// 스타일
+// 스타일 - Damoa 파란색 테마
 const styles = {
   container: {
     display: 'flex',
@@ -29,7 +29,7 @@ const styles = {
     width: '50px',
     height: '50px',
     border: '5px solid #f3f3f3',
-    borderTop: '5px solid #ff6b35',
+    borderTop: '5px solid #2563eb',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },

@@ -128,7 +128,7 @@ if (!document.getElementById('empty-styles')) {
       content: '✓';
       position: absolute;
       left: 0;
-      color: #ff6b35;
+      color: #2563eb;
       font-weight: bold;
     }
   `;

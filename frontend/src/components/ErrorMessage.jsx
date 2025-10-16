@@ -26,7 +26,7 @@ const ErrorMessage = ({ message, onRetry }) => {
   );
 };
 
-// 스타일
+// 스타일 - Damoa 파란색 테마
 const styles = {
   container: {
     backgroundColor: '#fff',
@@ -35,7 +35,7 @@ const styles = {
     padding: '60px 40px',
     textAlign: 'center',
     margin: '20px 0',
-    border: '2px solid #ff6b6b',
+    border: '2px solid #ef4444',
   },
   iconWrapper: {
     marginBottom: '20px',
@@ -58,7 +58,7 @@ const styles = {
     lineHeight: '1.6',
   },
   retryButton: {
-    backgroundColor: '#ff6b35',
+    backgroundColor: '#2563eb',
     color: '#fff',
     border: 'none',
     borderRadius: '8px',
@@ -67,7 +67,7 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
-    boxShadow: '0 2px 4px rgba(255, 107, 53, 0.3)',
+    boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
   },
 };
 
@@ -101,9 +101,9 @@ if (!document.getElementById('error-styles')) {
     }
 
     .error-retry-button:hover {
-      background-color: #ff5722 !important;
+      background-color: #1e40af !important;
       transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(255, 107, 53, 0.4) !important;
+      box-shadow: 0 4px 8px rgba(37, 99, 235, 0.4) !important;
     }
 
     .error-retry-button:active {
