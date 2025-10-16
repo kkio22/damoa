@@ -4,19 +4,22 @@
 
 import { Pool } from 'pg';
 import { UserRepository } from './repository/user.repository';
+import { RefreshTokenRepository } from './repository/refresh-token.repository';
 import { AuthService } from './service/auth.service';
 import { AuthController } from './controller/auth.controller';
 import { AuthRoutes } from './routes/auth.routes';
 
 export class AuthContainer {
   private userRepository: UserRepository;
+  private refreshTokenRepository: RefreshTokenRepository;
   private authService: AuthService;
   private authController: AuthController;
   private authRoutes: AuthRoutes;
 
   constructor(pool: Pool) {
     this.userRepository = new UserRepository(pool);
-    this.authService = new AuthService(this.userRepository);
+    this.refreshTokenRepository = new RefreshTokenRepository(pool);
+    this.authService = new AuthService(this.userRepository, this.refreshTokenRepository);
     this.authController = new AuthController(this.authService);
     this.authRoutes = new AuthRoutes(this.authController);
   }

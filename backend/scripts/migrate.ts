@@ -166,6 +166,36 @@ const createUsersTable = async () => {
 };
 
 /**
+ * refresh_tokens 테이블 생성 (Refresh Token 관리)
+ */
+const createRefreshTokensTable = async () => {
+  const query = `
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      token VARCHAR(500) NOT NULL UNIQUE,
+      expires_at TIMESTAMP NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      revoked_at TIMESTAMP,
+      replaced_by_token VARCHAR(500)
+    );
+
+    -- 인덱스 생성
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token ON refresh_tokens(token);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires_at ON refresh_tokens(expires_at);
+  `;
+
+  try {
+    await pool.query(query);
+    console.log('✅ refresh_tokens 테이블 생성 완료');
+  } catch (error) {
+    console.error('❌ refresh_tokens 테이블 생성 실패:', error);
+    throw error;
+  }
+};
+
+/**
  * 마이그레이션 실행
  */
 const runMigration = async () => {
@@ -182,6 +212,7 @@ const runMigration = async () => {
     await createCrawlingLogsTable();
     await createSearchLogsTable();
     await createUsersTable();
+    await createRefreshTokensTable();
 
     console.log('\n✅ 마이그레이션 완료!');
     process.exit(0);

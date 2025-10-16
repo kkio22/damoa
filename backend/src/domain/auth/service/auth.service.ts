@@ -5,7 +5,9 @@
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { UserRepository } from '../repository/user.repository';
+import { RefreshTokenRepository } from '../repository/refresh-token.repository';
 import {
   UserCreateRequest,
   UserLoginRequest,
@@ -17,13 +19,17 @@ import {
 
 export class AuthService {
   private userRepo: UserRepository;
+  private refreshTokenRepo: RefreshTokenRepository;
   private jwtSecret: string;
-  private jwtExpiresIn: string;
+  private accessTokenExpiresIn: string;
+  private refreshTokenExpiresIn: string;
 
-  constructor(userRepo: UserRepository) {
+  constructor(userRepo: UserRepository, refreshTokenRepo: RefreshTokenRepository) {
     this.userRepo = userRepo;
+    this.refreshTokenRepo = refreshTokenRepo;
     this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-    this.jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    this.accessTokenExpiresIn = '15m'; // Access Token: 15분
+    this.refreshTokenExpiresIn = '30d'; // Refresh Token: 30일
   }
 
   /**
@@ -75,17 +81,25 @@ export class AuthService {
       throw new Error('이메일 또는 비밀번호가 일치하지 않습니다');
     }
 
-    // 3. JWT 토큰 생성
+    // 3. JWT Access Token 생성 (15분)
     const payload: JwtPayload = {
       userId: user.id,
       email: user.email,
     };
 
     const accessToken = jwt.sign(payload as object, this.jwtSecret, {
-      expiresIn: this.jwtExpiresIn,
+      expiresIn: this.accessTokenExpiresIn, // 15분
     } as jwt.SignOptions);
 
-    // 4. 사용자 정보 반환 (비밀번호 제외)
+    // 4. Refresh Token 생성 (30일)
+    const refreshToken = crypto.randomBytes(64).toString('hex');
+    const refreshTokenExpiresAt = new Date();
+    refreshTokenExpiresAt.setDate(refreshTokenExpiresAt.getDate() + 30); // 30일 후
+
+    // 5. Refresh Token DB에 저장
+    await this.refreshTokenRepo.create(user.id, refreshToken, refreshTokenExpiresAt);
+
+    // 6. 사용자 정보 반환 (비밀번호 제외)
     const userResponse: UserResponse = {
       id: user.id,
       email: user.email,
@@ -102,6 +116,7 @@ export class AuthService {
       user: userResponse,
       tokens: {
         accessToken,
+        refreshToken,
       },
     };
   }
@@ -116,6 +131,56 @@ export class AuthService {
     } catch (error) {
       throw new Error('유효하지 않은 토큰입니다');
     }
+  }
+
+  /**
+   * Refresh Token으로 새 Access Token 발급
+   */
+  async refreshAccessToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    // 1. Refresh Token 검증
+    const storedToken = await this.refreshTokenRepo.findByToken(refreshToken);
+    
+    if (!storedToken) {
+      throw new Error('유효하지 않은 Refresh Token입니다');
+    }
+
+    // 2. 만료 확인
+    if (new Date(storedToken.expires_at) < new Date()) {
+      await this.refreshTokenRepo.revoke(refreshToken);
+      throw new Error('Refresh Token이 만료되었습니다');
+    }
+
+    // 3. 사용자 확인
+    const user = await this.userRepo.findById(storedToken.user_id);
+    if (!user) {
+      throw new Error('사용자를 찾을 수 없습니다');
+    }
+
+    // 4. 새 Access Token 생성 (15분)
+    const payload: JwtPayload = {
+      userId: user.id,
+      email: user.email,
+    };
+
+    const newAccessToken = jwt.sign(payload as object, this.jwtSecret, {
+      expiresIn: this.accessTokenExpiresIn,
+    } as jwt.SignOptions);
+
+    // 5. 새 Refresh Token 생성 (Refresh Token Rotation)
+    const newRefreshToken = crypto.randomBytes(64).toString('hex');
+    const newRefreshTokenExpiresAt = new Date();
+    newRefreshTokenExpiresAt.setDate(newRefreshTokenExpiresAt.getDate() + 30);
+
+    // 6. 이전 Refresh Token 폐기 및 새 토큰 저장
+    await this.refreshTokenRepo.revoke(refreshToken, newRefreshToken);
+    await this.refreshTokenRepo.create(user.id, newRefreshToken, newRefreshTokenExpiresAt);
+
+    console.log(`✅ Access Token 갱신 성공: ${user.email}`);
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
   }
 
   /**

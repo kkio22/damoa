@@ -7,6 +7,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { initCrawlingModule } from './domain/crawling';
 import { initAuthModule } from './domain/auth';
 import { sanitizeInput, preventSQLInjection } from './middlewares/validation.middleware';
@@ -26,15 +27,18 @@ class App {
     // 보안 헤더 설정 (Helmet)
     this.app.use(helmet());
 
-    // CORS 설정 (개선 - 특정 origin만 허용)
+    // CORS 설정 (HTTP-only Cookies 지원)
     const corsOptions = {
       origin: process.env.CORS_ORIGIN || ['http://localhost', 'http://localhost:80'],
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
-      credentials: true,
+      credentials: true, // 쿠키 전송 허용 (중요!)
       maxAge: 86400, // 24시간
     };
     this.app.use(cors(corsOptions));
+
+    // Cookie Parser (HTTP-only Cookies 파싱)
+    this.app.use(cookieParser());
 
     // Body parser (크기 제한 추가)
     this.app.use(express.json({ limit: '10mb' }));

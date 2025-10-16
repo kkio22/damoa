@@ -79,8 +79,20 @@ export class AuthRoutes {
     this.router.get('/me', authenticateJWT, this.controller.getMe);
 
     /**
+     * POST /api/auth/refresh
+     * Access Token 갱신 (Refresh Token 사용)
+     * Cookies: refreshToken (HTTP-only)
+     * Response:
+     *   {
+     *     "success": true,
+     *     "message": "Access Token이 갱신되었습니다"
+     *   }
+     */
+    this.router.post('/refresh', this.controller.refresh);
+
+    /**
      * POST /api/auth/logout
-     * 로그아웃 (프론트에서 토큰 삭제)
+     * 로그아웃 (쿠키 삭제)
      * Response:
      *   {
      *     "success": true,

@@ -15,23 +15,18 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 초기화: localStorage에서 토큰 확인
+  // 초기화: 쿠키에서 자동으로 인증 확인
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        try {
-          // 토큰으로 사용자 정보 가져오기
-          const response = await axios.get(`${API_URL}/api/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          setUser(response.data.user);
-        } catch (error) {
-          console.error('토큰 검증 실패:', error);
-          localStorage.removeItem('accessToken');
-        }
+      try {
+        // HTTP-only 쿠키가 자동으로 전송됨
+        const response = await axios.get(`${API_URL}/api/auth/me`, {
+          withCredentials: true, // 쿠키 전송 허용 (중요!)
+        });
+        setUser(response.data.user);
+      } catch (error) {
+        // 쿠키가 없거나 만료됨
+        console.log('인증되지 않음');
       }
       setLoading(false);
     };
@@ -45,13 +40,19 @@ export const AuthProvider = ({ children }) => {
   const register = async (email, password, passwordConfirm, name, phone) => {
     try {
       setError(null);
-      const response = await axios.post(`${API_URL}/api/auth/register`, {
-        email,
-        password,
-        passwordConfirm,
-        name,
-        phone,
-      });
+      const response = await axios.post(
+        `${API_URL}/api/auth/register`,
+        {
+          email,
+          password,
+          passwordConfirm,
+          name,
+          phone,
+        },
+        {
+          withCredentials: true, // 쿠키 전송 허용
+        }
+      );
 
       return { success: true, message: response.data.message };
     } catch (error) {
@@ -67,17 +68,20 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
-        email,
-        password,
-      });
+      const response = await axios.post(
+        `${API_URL}/api/auth/login`,
+        {
+          email,
+          password,
+        },
+        {
+          withCredentials: true, // 쿠키 전송 허용 (중요!)
+        }
+      );
 
-      const { user, tokens } = response.data;
+      const { user } = response.data;
 
-      // 토큰 저장
-      localStorage.setItem('accessToken', tokens.accessToken);
-
-      // 사용자 정보 저장
+      // HTTP-only 쿠키로 토큰이 자동 설정됨 (localStorage 불필요!)
       setUser(user);
 
       return { success: true, message: '로그인 성공' };
@@ -91,8 +95,21 @@ export const AuthProvider = ({ children }) => {
   /**
    * 로그아웃
    */
-  const logout = () => {
-    localStorage.removeItem('accessToken');
+  const logout = async () => {
+    try {
+      // 서버에 로그아웃 요청 (쿠키 삭제)
+      await axios.post(
+        `${API_URL}/api/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+    } catch (error) {
+      console.error('로그아웃 요청 실패:', error);
+    }
+    
+    // 클라이언트 상태 초기화
     setUser(null);
     setError(null);
   };
@@ -101,14 +118,9 @@ export const AuthProvider = ({ children }) => {
    * 사용자 정보 새로고침
    */
   const refreshUser = async () => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) return;
-
     try {
       const response = await axios.get(`${API_URL}/api/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        withCredentials: true,
       });
       setUser(response.data.user);
     } catch (error) {
@@ -118,15 +130,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * 인증된 API 요청을 위한 axios 인터셉터 설정
+   * Access Token 갱신 (Refresh Token 사용)
+   */
+  const refreshAccessToken = async () => {
+    try {
+      await axios.post(
+        `${API_URL}/api/auth/refresh`,
+        {},
+        {
+          withCredentials: true, // 쿠키 전송
+        }
+      );
+      return true;
+    } catch (error) {
+      console.error('Token 갱신 실패:', error);
+      return false;
+    }
+  };
+
+  /**
+   * axios 기본 설정 (withCredentials + 자동 토큰 갱신)
    */
   useEffect(() => {
-    const interceptor = axios.interceptors.request.use(
+    // 모든 요청에 withCredentials 자동 추가
+    const requestInterceptor = axios.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
+        config.withCredentials = true; // 모든 요청에 쿠키 전송
         return config;
       },
       (error) => {
@@ -134,19 +163,38 @@ export const AuthProvider = ({ children }) => {
       }
     );
 
-    // 응답 인터셉터: 401 에러 시 자동 로그아웃
+    // 응답 인터셉터: 401 에러 시 자동 토큰 갱신 시도
     const responseInterceptor = axios.interceptors.response.use(
       (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          logout();
+      async (error) => {
+        const originalRequest = error.config;
+
+        // 401 에러이고, 아직 재시도하지 않았으며, refresh 엔드포인트가 아닌 경우
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url?.includes('/api/auth/refresh')
+        ) {
+          originalRequest._retry = true;
+
+          // Refresh Token으로 Access Token 갱신 시도
+          const refreshed = await refreshAccessToken();
+
+          if (refreshed) {
+            // 갱신 성공 시 원래 요청 재시도
+            return axios(originalRequest);
+          } else {
+            // 갱신 실패 시 로그아웃
+            logout();
+          }
         }
+
         return Promise.reject(error);
       }
     );
 
     return () => {
-      axios.interceptors.request.eject(interceptor);
+      axios.interceptors.request.eject(requestInterceptor);
       axios.interceptors.response.eject(responseInterceptor);
     };
   }, []);

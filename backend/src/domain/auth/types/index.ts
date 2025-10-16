@@ -35,7 +35,17 @@ export interface UserResponse {
 
 export interface AuthTokens {
   accessToken: string;
-  refreshToken?: string;
+  refreshToken: string;
+}
+
+export interface RefreshToken {
+  id: string;
+  user_id: string;
+  token: string;
+  expires_at: Date;
+  created_at: Date;
+  revoked_at?: Date;
+  replaced_by_token?: string;
 }
 
 export interface LoginResponse {

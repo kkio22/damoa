@@ -1,6 +1,6 @@
 /**
  * JWT 인증 미들웨어
- * Authorization 헤더에서 JWT 토큰 검증
+ * HTTP-only 쿠키에서 JWT 토큰 검증
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -9,32 +9,20 @@ import { JwtPayload } from '../domain/auth/types';
 
 /**
  * JWT 인증 미들웨어
- * Authorization: Bearer <token> 형식으로 전달된 토큰 검증
+ * HTTP-only 쿠키에서 토큰 추출 및 검증
  */
 export const authenticateJWT = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    // Authorization 헤더에서 토큰 추출
-    const authHeader = req.headers.authorization;
+    // 쿠키에서 토큰 추출
+    const token = req.cookies?.accessToken;
     
-    if (!authHeader) {
+    if (!token) {
       res.status(401).json({
         success: false,
         message: '인증 토큰이 없습니다',
       });
       return;
     }
-
-    // "Bearer TOKEN" 형식 검증
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      res.status(401).json({
-        success: false,
-        message: '올바르지 않은 토큰 형식입니다',
-      });
-      return;
-    }
-
-    const token = parts[1];
     
     // JWT 시크릿 키
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -77,20 +65,13 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
  */
 export const optionalAuthenticateJWT = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies?.accessToken;
     
-    if (!authHeader) {
+    if (!token) {
       next();
       return;
     }
 
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      next();
-      return;
-    }
-
-    const token = parts[1];
     const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
     
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
