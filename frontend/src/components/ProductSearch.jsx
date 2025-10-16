@@ -48,6 +48,7 @@ const ProductSearch = () => {
     setLoading(true);
     setError(null);
     setProducts([]);
+    setHasSearched(true); // 검색 실행됨
 
     try {
       // 백엔드 API 형식에 맞춰 요청 구성 (전국 단위 검색)
