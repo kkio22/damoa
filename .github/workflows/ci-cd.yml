@@ -89,7 +89,6 @@ jobs:
           gcloud compute ssh ${{ secrets.VM_INSTANCE_NAME }} \
             --zone=${{ secrets.VM_ZONE }} \
             --project=${{ env.PROJECT_ID }} \
-            --tunnel-through-iap=false \
             --command="
               set -e
               echo '📦 코드 업데이트 중...'
@@ -165,7 +164,6 @@ jobs:
           gcloud compute ssh ${{ secrets.VM_INSTANCE_NAME }} \
             --zone=${{ secrets.VM_ZONE }} \
             --project=${{ env.PROJECT_ID }} \
-            --tunnel-through-iap=false \
             --command="
               echo '📊 Docker 컨테이너 상태:'
               cd ~/damoa || cd ~/used\ trade
