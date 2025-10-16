@@ -158,15 +158,15 @@ export class SystemService {
    * 시스템 통계 조회
    */
   private async getStatistics(): Promise<SystemStatistics> {
-    // Redis 통계
+    // Redis 통계 (플랫폼 기반으로 변경)
     let redisStats = {
-      totalLocations: 0,
+      totalPlatforms: 0,
       totalProducts: 0,
     };
     try {
       const stats = await this.crawlingRepo.getStats();
       redisStats = {
-        totalLocations: stats.totalLocations,
+        totalPlatforms: stats.totalPlatforms,
         totalProducts: stats.totalProducts,
       };
     } catch (error) {

@@ -67,7 +67,7 @@ export interface CrawlingLogSummary {
  */
 export interface SystemStatistics {
   redis: {
-    totalLocations: number;
+    totalPlatforms: number;
     totalProducts: number;
     cacheHitRate?: number;
   };
