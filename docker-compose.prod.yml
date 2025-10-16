@@ -60,6 +60,8 @@ services:
       REDIS_PORT: 6379
       ENABLE_CRAWLER_SCHEDULER: ${ENABLE_CRAWLER_SCHEDULER:-true}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
     ports:
       - "8080:8080"
