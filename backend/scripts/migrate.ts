@@ -196,6 +196,39 @@ const createRefreshTokensTable = async () => {
 };
 
 /**
+ * favorites 테이블 생성 (즐겨찾기)
+ */
+const createFavoritesTable = async () => {
+  const query = `
+    CREATE TABLE IF NOT EXISTS favorites (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      product_id VARCHAR(500) NOT NULL,
+      product_data JSON NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- 인덱스 생성
+    CREATE INDEX IF NOT EXISTS idx_favorites_user_id ON favorites(user_id);
+    CREATE INDEX IF NOT EXISTS idx_favorites_product_id ON favorites(product_id);
+    CREATE INDEX IF NOT EXISTS idx_favorites_user_product ON favorites(user_id, product_id);
+    CREATE INDEX IF NOT EXISTS idx_favorites_created_at ON favorites(created_at);
+
+    -- 중복 방지 (한 사용자가 같은 상품을 중복 즐겨찾기 불가)
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_favorites_unique_user_product 
+      ON favorites(user_id, product_id);
+  `;
+
+  try {
+    await pool.query(query);
+    console.log('✅ favorites 테이블 생성 완료');
+  } catch (error) {
+    console.error('❌ favorites 테이블 생성 실패:', error);
+    throw error;
+  }
+};
+
+/**
  * 마이그레이션 실행
  */
 const runMigration = async () => {
@@ -213,6 +246,7 @@ const runMigration = async () => {
     await createSearchLogsTable();
     await createUsersTable();
     await createRefreshTokensTable();
+    await createFavoritesTable();
 
     console.log('\n✅ 마이그레이션 완료!');
     process.exit(0);

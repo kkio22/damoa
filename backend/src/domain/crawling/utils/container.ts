@@ -22,6 +22,7 @@ import { CrawlingScheduler } from '../scheduler/crawling.scheduler';
 import { createPostgresPool, createRedisClient } from '../config';
 import { AIContainer } from '../../ai'; // todolist 3일차: AI 모듈
 import { SystemContainer } from '../../system'; // todolist 3일차: 시스템 상태 모듈
+import { FavoriteContainer } from '../../favorite'; // 즐겨찾기 모듈
 
 export class Container {
   // 데이터베이스
@@ -57,6 +58,9 @@ export class Container {
 
   // 시스템 상태 모듈 (todolist 3일차)
   private systemContainer: SystemContainer;
+
+  // 즐겨찾기 모듈
+  private favoriteContainer: FavoriteContainer;
 
   constructor() {
     // 데이터베이스 초기화
@@ -112,6 +116,9 @@ export class Container {
       this.areaRepo,
       this.crawlingScheduler
     );
+
+    // 즐겨찾기 모듈 초기화
+    this.favoriteContainer = new FavoriteContainer(this.pgPool);
   }
 
   /**
@@ -168,6 +175,13 @@ export class Container {
    */
   getSystemContainer(): SystemContainer {
     return this.systemContainer;
+  }
+
+  /**
+   * 즐겨찾기 컨테이너 반환
+   */
+  getFavoriteContainer(): FavoriteContainer {
+    return this.favoriteContainer;
   }
 
   /**

@@ -152,6 +152,11 @@ class App {
     const systemRoutes = systemContainer.getRoutes();
     this.app.use('/api/system', systemRoutes.getRouter());
 
+    // 즐겨찾기 라우트 등록
+    const favoriteContainer = container.getFavoriteContainer();
+    const favoriteRoutes = favoriteContainer.getRoutes();
+    this.app.use('/api/favorites', favoriteRoutes.router);
+
     // 루트 경로
     this.app.get('/', (req, res) => {
       res.json({

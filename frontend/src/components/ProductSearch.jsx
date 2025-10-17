@@ -13,6 +13,7 @@ import MarketInsights from './MarketInsights'; // todolist 3일차
 import SkeletonLoader from './SkeletonLoader'; // todolist 4일차 - UI/UX 개선
 import ErrorMessage from './ErrorMessage'; // todolist 4일차 - UI/UX 개선
 import EmptyState from './EmptyState'; // todolist 4일차 - UI/UX 개선
+import FavoriteButton from './FavoriteButton'; // 즐겨찾기 버튼
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -403,6 +404,24 @@ const ProductSearch = () => {
                   <p style={styles.productPrice}>{formatPrice(product.price)}</p>
                   <p style={styles.productLocation}>{product.location}</p>
                   <p style={styles.productTime}>{formatTime(product.createdAt)}</p>
+                  
+                  {/* 즐겨찾기 버튼 */}
+                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+                    <FavoriteButton
+                      product={{
+                        id: product.id,
+                        title: product.title,
+                        price: formatPrice(product.price),
+                        image: product.imageUrls?.[0],
+                        url: product.originalUrl,
+                        platform: product.platform,
+                        location: product.location,
+                        description: product.description
+                      }}
+                      favoriteCount={0}
+                      isFavorite={false}
+                    />
+                  </div>
                 </div>
               </a>
             ))}
@@ -437,11 +456,11 @@ const ProductSearch = () => {
         <div style={styles.infoBox}>
           <h3 style={styles.infoTitle}>💡 검색 팁</h3>
           <ul style={styles.infoList}>
-            <li>상품명을 간단하게 입력해보세요 (예: 아이폰, 갤럭시, 에어팟)</li>
-            <li>🌏 전국 단위 검색으로 더 많은 상품을 찾을 수 있어요</li>
-            <li>가격 범위를 설정하면 더 정확한 검색이 가능해요</li>
-            <li>상품을 클릭하면 원본 거래 페이지로 이동합니다</li>
-            <li>🤖 AI 추천 기능으로 최적의 상품을 찾아보세요</li>
+            <li>상품명을 간단하게 입력해보세요.</li>
+            <li>🌏 전국 단위 검색으로 더 많은 상품을 찾을 수 있어요.</li>
+            <li>가격 범위를 설정하면 더 정확한 검색이 가능해요.</li>
+            <li>상품을 클릭하면 원본 거래 페이지로 이동합니다.</li>
+            <li>🤖 AI 추천 기능으로 최적의 상품을 찾아보세요.</li>
           </ul>
         </div>
       )}

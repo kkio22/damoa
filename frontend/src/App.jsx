@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProductSearch from './components/ProductSearch';
 import Register from './components/Register';
 import Login from './components/Login';
+import MyPage from './components/MyPage';
 
 // 메인 레이아웃 컴포넌트
 function MainLayout({ children }) {
@@ -31,6 +32,9 @@ function MainLayout({ children }) {
               {user ? (
                 <>
                   <span style={styles.userName}>{user.name}님</span>
+                  <button onClick={() => navigate('/mypage')} style={styles.mypageButton}>
+                    마이페이지
+                  </button>
                   <button onClick={logout} style={styles.logoutButton}>
                     로그아웃
                   </button>
@@ -72,6 +76,7 @@ function App() {
             <Route path="/" element={<ProductSearch />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/mypage" element={<MyPage />} />
             {/* 예시: 보호된 라우트 (필요 시 추가)
             <Route
               path="/profile"
@@ -151,6 +156,17 @@ const styles = {
     color: 'white',
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     border: '2px solid white',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  mypageButton: {
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: '#2563eb',
+    backgroundColor: 'white',
+    border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s',
