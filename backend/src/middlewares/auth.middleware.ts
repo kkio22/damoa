@@ -25,7 +25,10 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
     }
     
     // JWT 시크릿 키
-    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET 환경 변수가 설정되지 않았습니다.');
+    }
+    const jwtSecret = process.env.JWT_SECRET;
     
     // 토큰 검증
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
@@ -72,7 +75,10 @@ export const optionalAuthenticateJWT = (req: Request, res: Response, next: NextF
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET 환경 변수가 설정되지 않았습니다.');
+    }
+    const jwtSecret = process.env.JWT_SECRET;
     
     const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
     req.user = decoded;

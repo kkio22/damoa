@@ -27,7 +27,13 @@ export class AuthService {
   constructor(userRepo: UserRepository, refreshTokenRepo: RefreshTokenRepository) {
     this.userRepo = userRepo;
     this.refreshTokenRepo = refreshTokenRepo;
-    this.jwtSecret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+    
+    // JWT_SECRET 환경 변수 필수
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET 환경 변수가 설정되지 않았습니다.');
+    }
+    
+    this.jwtSecret = process.env.JWT_SECRET;
     this.accessTokenExpiresIn = '15m'; // Access Token: 15분
     this.refreshTokenExpiresIn = '30d'; // Refresh Token: 30일
   }

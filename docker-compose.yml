@@ -55,6 +55,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET}
+      ENABLE_CRAWLER_SCHEDULER: ${ENABLE_CRAWLER_SCHEDULER}
+      CORS_ORIGIN: ${CORS_ORIGIN}
     ports:
       - "3000:3000"
     depends_on:
@@ -83,7 +86,7 @@ services:
       dockerfile: Dockerfile
       args:
         # 브라우저에서 접근할 수 있는 주소로 설정
-        REACT_APP_API_URL: http://localhost:3000
+        REACT_APP_API_URL: ${REACT_APP_API_URL}
     container_name: smarttrade-frontend
     restart: unless-stopped
     ports:
