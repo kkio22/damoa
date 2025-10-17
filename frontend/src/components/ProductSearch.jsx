@@ -320,12 +320,10 @@ const ProductSearch = () => {
               </h3>
               <div style={styles.productsGrid}>
                 {aiAnalysis.recommendations.map((rec) => (
-                  <a
+                  <div
                     key={rec.product.id}
-                    href={rec.product.originalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     style={styles.productCard}
+                    onClick={() => window.open(rec.product.originalUrl, '_blank')}
                   >
                     {/* AI 점수 배지 */}
                     <div style={styles.aiScoreBadge}>
@@ -345,7 +343,7 @@ const ProductSearch = () => {
                         </div>
                       ))}
                     </div>
-                  </a>
+                  </div>
                 ))}
               </div>
             </div>
@@ -369,12 +367,10 @@ const ProductSearch = () => {
 
           <div style={styles.productsGrid}>
             {currentProducts.map((product) => (
-              <a
+              <div
                 key={product.id}
-                href={product.originalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
                 style={styles.productCard}
+                onClick={() => window.open(product.originalUrl, '_blank')}
               >
                 {/* 상품 이미지 */}
                 <div style={styles.productImageWrapper}>
@@ -406,7 +402,10 @@ const ProductSearch = () => {
                   <p style={styles.productTime}>{formatTime(product.createdAt)}</p>
                   
                   {/* 즐겨찾기 버튼 */}
-                  <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}>
+                  <div 
+                    style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f0f0f0' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <FavoriteButton
                       product={{
                         id: product.id,
@@ -423,7 +422,7 @@ const ProductSearch = () => {
                     />
                   </div>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
 
